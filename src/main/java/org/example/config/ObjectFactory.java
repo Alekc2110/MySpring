@@ -42,14 +42,20 @@ public class ObjectFactory {
 
     @SneakyThrows
     public <T> T creatObject(Class<T> classType){
-        if(classType.isInterface()){
-            classType =  (Class<T>) config.getImplClass(classType);
-        }
+        classType = resolveImpl(classType);
+
         T imlObjectInstance = classType.getDeclaredConstructor().newInstance();
 
         configureObject(imlObjectInstance);
 
         return imlObjectInstance;
+    }
+
+    private <T> Class<T> resolveImpl(Class<T> classType) {
+        if(classType.isInterface()){
+            classType =  (Class<T>) config.getImplClass(classType);
+        }
+        return classType;
     }
 
     private <T> void configureObject(T imlObjectInstance) {

@@ -2,9 +2,9 @@ package org.example.config;
 
 import lombok.SneakyThrows;
 import org.example.interfaces.ObjectConfigurator;
+import org.example.interfaces.ProxyConfigurator;
 
 import javax.annotation.PostConstruct;
-import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Proxy;
@@ -14,16 +14,32 @@ import java.util.Set;
 
 public class ObjectFactory {
 
-    private List<ObjectConfigurator> configuratorList = new ArrayList<>();
+    private List<ObjectConfigurator> configurators = new ArrayList<>();
+    private List<ProxyConfigurator> proxyConfigurators = new ArrayList<>();
     private ApplicationContext context;
 
     @SneakyThrows
     public ObjectFactory(ApplicationContext context){
         this.context = context;
+        populateObjectConfiguratorList(context);
+        populateProxyConfiguratorList(context);
+    }
+
+    @SneakyThrows
+    private void populateObjectConfiguratorList(ApplicationContext context) {
         Set<Class<? extends ObjectConfigurator>> configuratorImplClasses = context.getScanner()
                                                                                   .getSubTypesOf(ObjectConfigurator.class);
         for (Class<? extends ObjectConfigurator> aClass : configuratorImplClasses) {
-            configuratorList.add(aClass.getDeclaredConstructor().newInstance());
+            configurators.add(aClass.getDeclaredConstructor().newInstance());
+        }
+    }
+
+    @SneakyThrows
+    private void populateProxyConfiguratorList(ApplicationContext context) {
+        Set<Class<? extends ProxyConfigurator>> configuratorImplClasses = context.getScanner()
+                .getSubTypesOf(ProxyConfigurator.class);
+        for (Class<? extends ProxyConfigurator> aClass : configuratorImplClasses) {
+            proxyConfigurators.add(aClass.getDeclaredConstructor().newInstance());
         }
     }
 
@@ -36,15 +52,8 @@ public class ObjectFactory {
 
         invokeInitMethod(classType, imlObjectInstance);
 
-        if (classType.isAnnotationPresent(Deprecated.class)) {
-           return (T) Proxy.newProxyInstance(ClassLoader.getSystemClassLoader(), classType.getInterfaces(),
-                   (proxy, method, args) -> {
-               System.out.println("что же ты урод пользуешься Deprecated классами " + imlObjectInstance.getClass());
-              return method.invoke(imlObjectInstance, args);
-           });
-        }
+        return configureProxyObject(classType, imlObjectInstance);
 
-        return imlObjectInstance;
     }
 
     private <T> void invokeInitMethod(Class<T> classType, T imlObjectInstance) throws IllegalAccessException, InvocationTargetException {
@@ -57,7 +66,15 @@ public class ObjectFactory {
 
 
     private <T> void configureObject(T imlObjectInstance) {
-        configuratorList.forEach(configurator-> configurator.configure(imlObjectInstance, context));
+        configurators.forEach(configurator-> configurator.configure(imlObjectInstance, context));
+    }
+
+    private <T> T configureProxyObject(Class<T> classType, T imlObjectInstance) {
+        for (ProxyConfigurator configurator : proxyConfigurators) {
+            T proxy = configurator.createProxy(classType, imlObjectInstance);
+            if(proxy != imlObjectInstance) return proxy;
+        }
+        return imlObjectInstance;
     }
 
 }

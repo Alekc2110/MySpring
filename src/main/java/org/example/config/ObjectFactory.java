@@ -3,6 +3,9 @@ package org.example.config;
 import lombok.SneakyThrows;
 import org.example.interfaces.ObjectConfigurator;
 
+import javax.annotation.PostConstruct;
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -29,9 +32,18 @@ public class ObjectFactory {
 
         configureObject(imlObjectInstance);
 
+        invokeInitMethod(classType, imlObjectInstance);
+
         return imlObjectInstance;
     }
 
+    private <T> void invokeInitMethod(Class<T> classType, T imlObjectInstance) throws IllegalAccessException, InvocationTargetException {
+        for (Method method : classType.getMethods()) {
+            if(method.isAnnotationPresent(PostConstruct.class)){
+                method.invoke(imlObjectInstance);
+            }
+        }
+    }
 
 
     private <T> void configureObject(T imlObjectInstance) {

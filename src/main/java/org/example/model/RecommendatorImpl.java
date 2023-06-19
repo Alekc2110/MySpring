@@ -7,6 +7,7 @@ import org.example.interfaces.Recommendator;
 
 @AllArgsConstructor
 @NoArgsConstructor
+@Deprecated
 public class RecommendatorImpl implements Recommendator {
 
     @InjectProperty("alcohol")

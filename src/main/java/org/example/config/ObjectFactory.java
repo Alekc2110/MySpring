@@ -4,8 +4,10 @@ import lombok.SneakyThrows;
 import org.example.interfaces.ObjectConfigurator;
 
 import javax.annotation.PostConstruct;
+import java.lang.reflect.InvocationHandler;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
@@ -33,6 +35,14 @@ public class ObjectFactory {
         configureObject(imlObjectInstance);
 
         invokeInitMethod(classType, imlObjectInstance);
+
+        if (classType.isAnnotationPresent(Deprecated.class)) {
+           return (T) Proxy.newProxyInstance(ClassLoader.getSystemClassLoader(), classType.getInterfaces(),
+                   (proxy, method, args) -> {
+               System.out.println("что же ты урод пользуешься Deprecated классами " + imlObjectInstance.getClass());
+              return method.invoke(imlObjectInstance, args);
+           });
+        }
 
         return imlObjectInstance;
     }

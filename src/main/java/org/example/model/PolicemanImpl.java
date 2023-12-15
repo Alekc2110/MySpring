@@ -1,12 +1,13 @@
 package org.example.model;
 
+import org.example.annotation.Benchmark;
 import org.example.annotation.InjectByType;
 import org.example.interfaces.Policeman;
 import org.example.interfaces.Recommendator;
 
 import javax.annotation.PostConstruct;
 
-
+@Benchmark
 public class PolicemanImpl implements Policeman {
     @InjectByType
     private Recommendator recommendator;
